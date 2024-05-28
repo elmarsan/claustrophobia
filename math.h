@@ -6,6 +6,9 @@
 
 namespace showcase
 {
+inline float radians(const float& deg) { return deg * M_PI / 180; }
+inline float degress(const float& radians) { return radians * 180 / M_PI; }
+
 struct vec3
 {
     vec3() : x(0), y(0), z(0) {}
@@ -65,6 +68,14 @@ struct vec3
     float& operator[](const int i) { return (&x)[i]; }
     const float& operator[](const int i) const { return (&x)[i]; }
 
+    float angle(const vec3& r) const
+    {
+        const auto res = pow(cos(dot(r)) / magnitude() * r.magnitude(), -1);
+        std::cout << "Angle in radians: " << res << std::endl;
+        std::cout << "Angle in degress: " << degress(res) << std::endl;
+        return res;
+    }
+
     friend vec3 operator*(const float& l, const vec3& r) { return vec3{r.x * l, r.y * l, r.z * l}; }
 
     float x;
@@ -112,7 +123,8 @@ struct mat4
     /*     { */
     /*         for (int j = 0; j < 4; ++j) */
     /*         { */
-    /*             result[i][j] = col0[i] * rhs[0][j] + col1[i] * rhs[1][j] + col2[i] * rhs[2][j] + col3[i] * rhs[3][j]; */
+    /*             result[i][j] = col0[i] * rhs[0][j] + col1[i] * rhs[1][j] + col2[i] * rhs[2][j] + col3[i] * rhs[3][j];
+     */
     /*         } */
     /*     } */
 
@@ -124,8 +136,6 @@ struct mat4
     vec4 col2;
     vec4 col3;
 };
-
-inline float radians(const float& deg) { return deg * M_PI / 180; }
 
 inline mat4 translate(const mat4& m, const vec3& v)
 {
@@ -181,7 +191,7 @@ inline mat4 rotate(const mat4& m, const float& a, const vec3& v)
 /*     return f; */
 /* } */
 
-inline mat4 perspective(const float fov, const float aspectRatio, const float zNear, const float zFar)
+inline mat4 perspective(const float& fov, const float& aspectRatio, const float& zNear, const float& zFar)
 {
     mat4 p{0};
 
@@ -196,7 +206,7 @@ inline mat4 perspective(const float fov, const float aspectRatio, const float zN
     return p;
 }
 
-inline mat4 lookAt(const vec3 eye, const vec3 target, const vec3 worldUp)
+inline mat4 lookAt(const vec3& eye, const vec3& target, const vec3& worldUp)
 {
     /* const vec3 forward = (target - eye).normalize(); */
     /* const vec3 xaxis = worldUp.normalize().cross(forward).normalize(); */
@@ -245,5 +255,14 @@ inline mat4 lookAt(const vec3 eye, const vec3 target, const vec3 worldUp)
     lookAtm[3][2] = -forward.x * eye.x - forward.y * eye.y - forward.z * eye.z;
 
     return lookAtm;
+}
+
+inline mat4 scale(const mat4& m, const vec3& v)
+{
+    mat4 s{m};
+    s[0][0] = v.x;
+    s[1][1] = v.y;
+    s[2][2] = v.z;
+    return s;
 }
 }  // namespace showcase

@@ -1,5 +1,8 @@
 #include <cassert>
 #include <cmath>
+#include "glm/detail/qualifier.hpp"
+#include "glm/fwd.hpp"
+#include "glm/trigonometric.hpp"
 #include "math.h"
 #include "shader.h"
 
@@ -9,17 +12,19 @@
 #include <glm/glm.hpp>
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_transform.hpp"
+#include <glm/gtc/matrix_transform.hpp>
 
 void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
 void mouseCallback(GLFWwindow* window, double xpos, double ypos);
 void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
-int screenWidth = 800;
-int screenHeight = 600;
+int screenWidth = 1200;
+int screenHeight = 800;
 
 // camera
-showcase::vec3 cameraPos{0.0f, 0.0f, 3.0f};
+const float cameraPosY = 0.5f;
+showcase::vec3 cameraPos{2.0f, cameraPosY, -3.0f};
 showcase::vec3 cameraFront{0.0f, 0.0f, -1.0f};
 showcase::vec3 cameraUp{0.0f, 1.0f, 0.0f};
 
@@ -31,9 +36,18 @@ float lastX = static_cast<float>(screenWidth) / 2.0;
 float lastY = static_cast<float>(screenHeight) / 2.0;
 float fov = 45.0f;
 
+const float perspectiveNear = 0.1f;
+const float perspectiveFar = 100.0f;
+
 // Timing
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
+
+// mechanics
+bool jumping = false;
+const float jumpYLimit = 2.0f;
+const float jumpVelocity = 4.5f;
+const float cameraVelocity = 10.5;
 
 int main()
 {
@@ -59,61 +73,98 @@ int main()
 
     glEnable(GL_DEPTH_TEST);
 
-    GLuint texture1;
-    glGenTextures(1, &texture1);
-
-    glBindTexture(GL_TEXTURE_2D, texture1);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    int width, height, nrChannels;
     // tell stb_image.h to flip loaded texture's on the y-axis.
     stbi_set_flip_vertically_on_load(true);
-    unsigned char* data = stbi_load("./resources/container.jpg", &width, &height, &nrChannels, 0);
-    assert(data && "Failed to load texture 'container.jpg'");
-    glBindTexture(GL_TEXTURE_2D, texture1);
+
+    GLuint floorTexture1, floorTexture2, wallTexture1;
+    glGenTextures(1, &floorTexture1);
+    glGenTextures(1, &floorTexture2);
+    glGenTextures(1, &wallTexture1);
+
+    ///////////////////// FLOOR TEXTURE 1 /////////////////////
+    int width, height, nrChannels;
+    glBindTexture(GL_TEXTURE_2D, floorTexture1);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    auto* data = stbi_load("./resources/floor_1.png", &width, &height, &nrChannels, 0);
+    assert(data && "Failed to load texture 'floor_1.png'");
+    glBindTexture(GL_TEXTURE_2D, floorTexture1);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
     stbi_image_free(data);
+    ///////////////////////////////////////////////////////////
 
+    ///////////////////// FLOOR TEXTURE 2 /////////////////////
+    glBindTexture(GL_TEXTURE_2D, floorTexture2);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    data = stbi_load("./resources/floor_2.jpg", &width, &height, &nrChannels, 0);
+    assert(data && "Failed to load texture 'floor_2.jpg'");
+    glBindTexture(GL_TEXTURE_2D, floorTexture2);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    stbi_image_free(data);
+    ///////////////////////////////////////////////////////////
+
+    ///////////////////// WALL TEXTURE 1 /////////////////////
+    glBindTexture(GL_TEXTURE_2D, wallTexture1);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    data = stbi_load("./resources/wall_1.jpg", &width, &height, &nrChannels, 0);
+    assert(data && "Failed to load texture 'wall_1.jpg'");
+    glBindTexture(GL_TEXTURE_2D, wallTexture1);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    stbi_image_free(data);
+    ///////////////////////////////////////////////////////////
     Shader shader{"showcase.vert", "showcase.frag"};
 
     float vertices[] = {
-        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 0.5f,  -0.5f, -0.5f, 1.0f, 0.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
-        0.5f,  0.5f,  -0.5f, 1.0f, 1.0f, -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
+        // positions          // colors           // texture coords
+        0.5f,  0.5f,  0.0f, 1.0f, 1.0f,  // top right
+        0.5f,  -0.5f, 0.0f, 1.0f, 0.0f,  // bottom right
+        -0.5f, -0.5f, 0.0f, 0.0f, 0.0f,  // bottom left
+        -0.5f, 0.5f,  0.0f, 0.0f, 1.0f   // top left
+    };
 
-        -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, 0.5f,  -0.5f, 0.5f,  1.0f, 0.0f, 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 1.0f, -0.5f, 0.5f,  0.5f,  0.0f, 1.0f, -0.5f, -0.5f, 0.5f,  0.0f, 0.0f,
+    unsigned int indices[] = {
+        0, 1, 3,  // first Triangle
+        1, 2, 3   // second Triangle
+    };
 
-        -0.5f, 0.5f,  0.5f,  1.0f, 0.0f, -0.5f, 0.5f,  -0.5f, 1.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, -0.5f, 0.5f,  0.5f,  1.0f, 0.0f,
-
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f, 0.5f,  -0.5f, -0.5f, 0.0f, 1.0f,
-        0.5f,  -0.5f, -0.5f, 0.0f, 1.0f, 0.5f,  -0.5f, 0.5f,  0.0f, 0.0f, 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 0.5f,  -0.5f, -0.5f, 1.0f, 1.0f, 0.5f,  -0.5f, 0.5f,  1.0f, 0.0f,
-        0.5f,  -0.5f, 0.5f,  1.0f, 0.0f, -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
-
-        -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f, 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f, -0.5f, 0.5f,  0.5f,  0.0f, 0.0f, -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f};
-
-    showcase::vec3 cubePos{0.0f, 0.0f, 0.0f};
-
-    GLuint VBO, VAO;
+    GLuint VAO, VBO, EBO;
     glGenVertexArrays(1, &VAO);
-    glBindVertexArray(VAO);
     glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
+
+    glBindVertexArray(VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    // Position attribute
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    // Texture coord attribute
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
+    /////////////////////////////////////////////////////////
+
+    glBindVertexArray(VAO);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, floorTexture1);
 
     while (!glfwWindowShouldClose(window))
     {
@@ -123,41 +174,111 @@ int main()
 
         processInput(window);
 
+        // Jumping
+        if (jumping)
+        {
+            const float jumpSpeed = jumpVelocity * deltaTime;
+            cameraPos.y += jumpSpeed;
+
+            if (cameraPos.y >= jumpYLimit)
+            {
+                jumping = false;
+            }
+        }
+        // Falling
+        if (!jumping && cameraPos.y > cameraPosY)
+        {
+            const float jumpSpeed = jumpVelocity * deltaTime;
+            cameraPos.y -= jumpSpeed;
+
+            // Adjust cameraY when landing
+            if (cameraPos.y < cameraPosY)
+            {
+                cameraPos.y = cameraPosY;  // Ensure camera is at correct position
+            }
+        }
+
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         shader.use();
-        glActiveTexture(GL_TEXTURE0);
-
-        /* showcase::mat4 myModel{1.0f}; */
-        /* myModel = showcase::translate(myModel, showcase::vec3{0.0f, 0.0f, -1.0f}); */
-        /* myModel = showcase::rotate(myModel, showcase::radians(15.0f), showcase::vec3{1.0f, -2.30f, 0.5f}); */
-        /* shader.setMat4("model", myModel); */
-
-        glm::vec3 glmCamPos{cameraPos.x, cameraPos.y, cameraPos.z};
-        glm::vec3 glmCamFront{cameraFront.x, cameraFront.y, cameraFront.z};
-        glm::vec3 glmCamUp{cameraUp.x, cameraUp.y, cameraUp.z};
-
-        /* auto view = glm::lookAt(glmCamPos, glmCamPos + glmCamFront, glmCamUp); */
-        /* shader.oldSetMat4("view", view); */
 
         auto view = showcase::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
         shader.setMat4("view", view);
 
-        auto proj =
-            showcase::perspective(showcase::radians(fov), float(screenWidth) / float(screenHeight), 0.1f, 100.f);
+        auto proj = showcase::perspective(showcase::radians(fov), float(screenWidth) / float(screenHeight),
+                                          perspectiveNear, perspectiveFar);
         shader.setMat4("proj", proj);
 
-        showcase::mat4 myModel{1.0f};
-        shader.setMat4("model", myModel);
+        glm::mat4 trans;
+        glm::mat4 scale;
+        glm::mat4 rot;
+        glm::mat4 model{1.0f};
 
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        /////////////////////////  WALLS /////////////////////////
+        glBindTexture(GL_TEXTURE_2D, wallTexture1);
+
+        for (int i = 0; i < 7; i++)
+        {
+            // Left wall
+            trans = glm::translate(glm::mat4{1.0f}, glm::vec3{-0.3f, 0.8f, i * -5.0});
+            rot = glm::rotate(glm::mat4{1.0f}, glm::radians(90.0f), glm::vec3{0, 1.0f, 0});
+            scale = glm::scale(glm::mat4{1.0f}, glm::vec3{5.0f, 5.5f, 0});
+            model = trans * rot * scale;
+
+            shader.oldSetMat4("model", model);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+            // Right wall
+            trans = glm::translate(trans, glm::vec3{10.0f, 0, 0});
+            model = trans * rot * scale;
+
+            shader.oldSetMat4("model", model);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        }
+        // Far wall
+        trans = glm::translate(glm::mat4{1.0f}, glm::vec3{4.5f, 0.8f, -32.0f});
+        scale = glm::scale(glm::mat4{1.0f}, glm::vec3{12.0f, 5.5f, 1.0f});
+        model = trans * scale;
+        shader.oldSetMat4("model", model);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+        // Near wall
+        trans = glm::translate(glm::mat4{1.0f}, glm::vec3{4.5f, 0.8f, 1.0f});
+        model = trans * scale;
+        shader.oldSetMat4("model", model);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+        //////////////////////////////////////////////////////////
+
+        /////////////////////////  CEILING ///////////////////////
+        glBindTexture(GL_TEXTURE_2D, floorTexture1);
+        trans = glm::translate(glm::mat4{1.0f}, glm::vec3{4.5f, 3.5f, -16.0f});
+        rot = glm::rotate(glm::mat4{1.0f}, showcase::radians(-90.f), glm::vec3{1.0f, 0, 0});
+        scale = glm::scale(glm::mat4{1.0f}, glm::vec3{12.0f, 40.0f, 1.0f});
+        model = trans * rot * scale;
+        shader.oldSetMat4("model", model);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        //////////////////////////////////////////////////////////
+
+        /////////////////////////  FLOOR /////////////////////////
+        glEnableVertexAttribArray(1);
+        glBindTexture(GL_TEXTURE_2D, floorTexture1);
+
+        trans = glm::translate(glm::mat4{1.0f}, glm::vec3{4.5f, -1.0f, -16.0f});
+        rot = glm::rotate(glm::mat4{1.0f}, showcase::radians(-90.0f), glm::vec3{1.0f, 0, 0});
+        scale = glm::scale(glm::mat4{1.0f}, glm::vec3{12.0f, 34.5f, 1.0f});
+        model = trans * rot * scale;
+        shader.oldSetMat4("model", model);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        /////////////////////////////////////////////////////////
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
     glDeleteBuffers(1, &VBO);
+    glDeleteBuffers(1, &EBO);
     glDeleteVertexArrays(1, &VAO);
 
     glfwTerminate();
@@ -171,7 +292,23 @@ void processInput(GLFWwindow* window)
         glfwSetWindowShouldClose(window, true);
     }
 
-    float cameraSpeed = static_cast<float>(2.5f * deltaTime);
+    const float cameraSpeed = cameraVelocity * deltaTime;
+
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+    {
+        if (!jumping && cameraPos.y == cameraPosY)
+        {
+            jumping = true;
+        }
+
+        return;
+    }
+
+    // Disable other key checks while jumping/falling
+    if (jumping || (!jumping && cameraPos.y > cameraPosY))
+    {
+        return;
+    }
 
     // Moving forward
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
@@ -195,6 +332,7 @@ void processInput(GLFWwindow* window)
         auto cameraRight = cameraFront.cross(cameraUp).normalize();
         cameraPos += cameraRight * cameraSpeed;
     }
+    cameraPos.y = cameraPosY;
 }
 
 void mouseCallback(GLFWwindow* window, double xposIn, double yposIn)
@@ -214,7 +352,7 @@ void mouseCallback(GLFWwindow* window, double xposIn, double yposIn)
     lastX = xpos;
     lastY = ypos;
 
-    float sensitivity = 0.07f;  // change this value to your liking
+    float sensitivity = 0.17f;  // change this value to your liking
     xoffset *= sensitivity;
     yoffset *= sensitivity;
 
@@ -230,11 +368,8 @@ void mouseCallback(GLFWwindow* window, double xposIn, double yposIn)
     showcase::vec3 dir{};
     dir.x = cos(showcase::radians(yaw)) * cos(showcase::radians(pitch));
     dir.y = sin(showcase::radians(pitch));
-    /* std::cout << dir.y << std::endl; */
     dir.z = sin(showcase::radians(yaw)) * cos(showcase::radians(pitch));
-    /* std::cout << dir.z << std::endl; */
     cameraFront = dir.normalize();
-    std::cout << "CameraFront: " << cameraFront.x << "," << cameraFront.y << "," << cameraFront.z << std::endl;
 }
 
 void scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
