@@ -7,7 +7,8 @@
 #include <sstream>
 #include <iostream>
 #include "math.h"
-#include <glm/glm.hpp>
+
+using namespace claustrophobia;
 
 class Shader
 {
@@ -93,12 +94,12 @@ public:
         glUniform1f(glGetUniformLocation(ID, name.c_str()), value); 
     }
     // ------------------------------------------------------------------------
-    void setVec3(const std::string &name, const showcase::vec3 &value) const
+    void setVec3(const std::string &name, const vec3 &value) const
     { 
         glUniform3fv(glGetUniformLocation(ID, name.c_str()), 1, &value[0]); 
     }
     // ------------------------------------------------------------------------
-    void setVec4(const std::string &name, const showcase::vec4 &value) const
+    void setVec4(const std::string &name, const vec4 &value) const
     { 
         glUniform4fv(glGetUniformLocation(ID, name.c_str()), 1, &value[0]); 
     }
@@ -107,11 +108,7 @@ public:
         glUniform4f(glGetUniformLocation(ID, name.c_str()), x, y, z, w); 
     }
     // ------------------------------------------------------------------------
-    void setMat4(const std::string &name, const showcase::mat4 &mat) const 
-    {
-        glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
-    }
-    void oldSetMat4(const std::string &name, const glm::mat4 &mat) const 
+    void setMat4(const std::string &name, const mat4 &mat) const 
     {
         glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
     }

@@ -2,9 +2,8 @@
 
 #include <math.h>
 #include <cmath>
-#include <iostream>
 
-namespace showcase
+namespace claustrophobia
 {
 inline float radians(const float& deg) { return deg * M_PI / 180; }
 inline float degress(const float& radians) { return radians * 180 / M_PI; }
@@ -68,13 +67,7 @@ struct vec3
     float& operator[](const int i) { return (&x)[i]; }
     const float& operator[](const int i) const { return (&x)[i]; }
 
-    float angle(const vec3& r) const
-    {
-        const auto res = pow(cos(dot(r)) / magnitude() * r.magnitude(), -1);
-        std::cout << "Angle in radians: " << res << std::endl;
-        std::cout << "Angle in degress: " << degress(res) << std::endl;
-        return res;
-    }
+    float angle(const vec3& r) const { return pow(cos(dot(r)) / magnitude() * r.magnitude(), -1); }
 
     friend vec3 operator*(const float& l, const vec3& r) { return vec3{r.x * l, r.y * l, r.z * l}; }
 
@@ -92,6 +85,8 @@ struct vec4
     const float& operator[](const int i) const { return (&x)[i]; }
 
     vec4 operator*(const vec4& r) const { return vec4{x * r.x, y * r.y, z * r.z, w * r.w}; }
+
+    float dot(const vec4& r) const { return x * r.x + y * r.y + z * r.z + w * r.w; }
 
     float x;
     float y;
@@ -114,22 +109,37 @@ struct mat4
     vec4& operator[](const int i) { return (&col0)[i]; }
     const vec4& operator[](const int i) const { return (&col0)[i]; }
 
-    // Wrong!!!!!!!!!!!!!!!! Fix it.
-    /* mat4 operator*(const mat4& rhs) const */
-    /* { */
-    /*     mat4 result; */
+    mat4 operator*(const mat4& r)
+    {
+        mat4 m{};
 
-    /*     for (int i = 0; i < 4; ++i) */
-    /*     { */
-    /*         for (int j = 0; j < 4; ++j) */
-    /*         { */
-    /*             result[i][j] = col0[i] * rhs[0][j] + col1[i] * rhs[1][j] + col2[i] * rhs[2][j] + col3[i] * rhs[3][j];
-     */
-    /*         } */
-    /*     } */
+        const vec4 row0{col0.x, col1.x, col2.x, col3.x};
+        const vec4 row1{col0.y, col1.y, col2.y, col3.y};
+        const vec4 row2{col0.z, col1.z, col2.z, col3.z};
+        const vec4 row3{col0.w, col1.w, col2.w, col3.w};
 
-    /*     return result; */
-    /* } */
+        m[0][0] = row0.dot(r.col0);
+        m[1][0] = row0.dot(r.col1);
+        m[2][0] = row0.dot(r.col2);
+        m[3][0] = row0.dot(r.col3);
+
+        m[0][1] = row1.dot(r.col0);
+        m[1][1] = row1.dot(r.col1);
+        m[2][1] = row1.dot(r.col2);
+        m[3][1] = row1.dot(r.col3);
+
+        m[0][2] = row2.dot(r.col0);
+        m[1][2] = row2.dot(r.col1);
+        m[2][2] = row2.dot(r.col2);
+        m[3][2] = row2.dot(r.col3);
+
+        m[0][3] = row3.dot(r.col0);
+        m[1][3] = row3.dot(r.col1);
+        m[2][3] = row3.dot(r.col2);
+        m[3][3] = row3.dot(r.col3);
+
+        return m;
+    }
 
     vec4 col0;
     vec4 col1;
@@ -208,30 +218,6 @@ inline mat4 perspective(const float& fov, const float& aspectRatio, const float&
 
 inline mat4 lookAt(const vec3& eye, const vec3& target, const vec3& worldUp)
 {
-    /* const vec3 forward = (target - eye).normalize(); */
-    /* const vec3 xaxis = worldUp.normalize().cross(forward).normalize(); */
-    /* const vec3 yaxis = forward.cross(xaxis); */
-
-    /* mat4 r{1.0f}; */
-    /* r[0][0] = xaxis.x; */
-    /* r[0][1] = yaxis.x; */
-    /* r[0][2] = forward.x; */
-
-    /* r[1][0] = xaxis.y; */
-    /* r[1][1] = yaxis.y; */
-    /* r[1][2] = forward.y; */
-
-    /* r[2][0] = xaxis.z; */
-    /* r[2][1] = yaxis.z; */
-    /* r[2][2] = forward.z; */
-
-    /* mat4 t{1.0f}; */
-    /* t[3][0] = -eye.x; */
-    /* t[3][1] = -eye.y; */
-    /* t[3][2] = -eye.z; */
-
-    /* return r * t; */
-
     const auto forward = (eye - target).normalize();
     const auto left = worldUp.cross(forward).normalize();
     const auto up = forward.cross(left);
@@ -265,4 +251,4 @@ inline mat4 scale(const mat4& m, const vec3& v)
     s[2][2] = v.z;
     return s;
 }
-}  // namespace showcase
+}  // namespace claustrophobia

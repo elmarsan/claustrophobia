@@ -1,18 +1,13 @@
 #include <cassert>
 #include <cmath>
-#include "glm/detail/qualifier.hpp"
-#include "glm/fwd.hpp"
-#include "glm/trigonometric.hpp"
 #include "math.h"
 #include "shader.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stb_image.h>
-#include <glm/glm.hpp>
-#include "glm/ext/matrix_clip_space.hpp"
-#include "glm/ext/matrix_transform.hpp"
-#include <glm/gtc/matrix_transform.hpp>
+
+using namespace claustrophobia;
 
 void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
@@ -24,9 +19,9 @@ int screenHeight = 800;
 
 // camera
 const float cameraPosY = 0.5f;
-showcase::vec3 cameraPos{2.0f, cameraPosY, -3.0f};
-showcase::vec3 cameraFront{0.0f, 0.0f, -1.0f};
-showcase::vec3 cameraUp{0.0f, 1.0f, 0.0f};
+vec3 cameraPos{2.0f, cameraPosY, -3.0f};
+vec3 cameraFront{0.0f, 0.0f, -1.0f};
+vec3 cameraUp{0.0f, 1.0f, 0.0f};
 
 bool firstMouse = true;
 float yaw = -90.0f;  // yaw is initialized to -90.0 degrees since a yaw of 0.0 results in a direction vector pointing to
@@ -59,7 +54,7 @@ int main()
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-    auto* window = glfwCreateWindow(screenWidth, screenHeight, "OpenGL showcase", nullptr, nullptr);
+    auto* window = glfwCreateWindow(screenWidth, screenHeight, "OpenGL claustrophobia", nullptr, nullptr);
     assert(window != nullptr && "Failed to create GLFW Window");
 
     glfwMakeContextCurrent(window);
@@ -126,7 +121,7 @@ int main()
     glGenerateMipmap(GL_TEXTURE_2D);
     stbi_image_free(data);
     ///////////////////////////////////////////////////////////
-    Shader shader{"showcase.vert", "showcase.frag"};
+    Shader shader{"rect.vert", "rect.frag"};
 
     float vertices[] = {
         // positions          // colors           // texture coords
@@ -203,17 +198,17 @@ int main()
 
         shader.use();
 
-        auto view = showcase::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+        auto view = lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
         shader.setMat4("view", view);
 
-        auto proj = showcase::perspective(showcase::radians(fov), float(screenWidth) / float(screenHeight),
+        auto proj = perspective(radians(fov), float(screenWidth) / float(screenHeight),
                                           perspectiveNear, perspectiveFar);
         shader.setMat4("proj", proj);
 
-        glm::mat4 trans;
-        glm::mat4 scale;
-        glm::mat4 rot;
-        glm::mat4 model{1.0f};
+        mat4 trans;
+        mat4 scaleM;
+        mat4 rot;
+        mat4 model;
 
         /////////////////////////  WALLS /////////////////////////
         glBindTexture(GL_TEXTURE_2D, wallTexture1);
@@ -221,43 +216,43 @@ int main()
         for (int i = 0; i < 7; i++)
         {
             // Left wall
-            trans = glm::translate(glm::mat4{1.0f}, glm::vec3{-0.3f, 0.8f, i * -5.0});
-            rot = glm::rotate(glm::mat4{1.0f}, glm::radians(90.0f), glm::vec3{0, 1.0f, 0});
-            scale = glm::scale(glm::mat4{1.0f}, glm::vec3{5.0f, 5.5f, 0});
-            model = trans * rot * scale;
+            trans = translate(mat4{1.0f}, vec3{-0.3f, 0.8f, i * -5.0f});
+            rot = rotate(mat4{1.0f}, radians(90.0f), vec3{0, 1.0f, 0});
+            scaleM = scale(mat4{1.0f}, vec3{5.0f, 5.5f, 0});
+            model = trans * rot * scaleM;
 
-            shader.oldSetMat4("model", model);
+            shader.setMat4("model", model);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
             // Right wall
-            trans = glm::translate(trans, glm::vec3{10.0f, 0, 0});
-            model = trans * rot * scale;
-
-            shader.oldSetMat4("model", model);
+            trans = translate(trans, vec3{10.0f, 0.8f, i * -5.0f});
+            model = trans * rot * scaleM;
+            shader.setMat4("model", model);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         }
         // Far wall
-        trans = glm::translate(glm::mat4{1.0f}, glm::vec3{4.5f, 0.8f, -32.0f});
-        scale = glm::scale(glm::mat4{1.0f}, glm::vec3{12.0f, 5.5f, 1.0f});
-        model = trans * scale;
-        shader.oldSetMat4("model", model);
+        trans = translate(mat4{1.0f}, vec3{4.5f, 0.8f, -32.0f});
+        scaleM = scale(mat4{1.0f}, vec3{12.0f, 5.5f, 1.0f});
+        model = trans * scaleM;
+        shader.setMat4("model", model);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         // Near wall
-        trans = glm::translate(glm::mat4{1.0f}, glm::vec3{4.5f, 0.8f, 1.0f});
-        model = trans * scale;
-        shader.oldSetMat4("model", model);
+        trans = translate(mat4{1.0f}, vec3{4.5f, 0.8f, 1.0f});
+        scaleM = scale(mat4{1.0f}, vec3{12.0f, 5.5f, 1.0f});
+        model = trans * scaleM;
+        shader.setMat4("model", model);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         //////////////////////////////////////////////////////////
 
         /////////////////////////  CEILING ///////////////////////
         glBindTexture(GL_TEXTURE_2D, floorTexture1);
-        trans = glm::translate(glm::mat4{1.0f}, glm::vec3{4.5f, 3.5f, -16.0f});
-        rot = glm::rotate(glm::mat4{1.0f}, showcase::radians(-90.f), glm::vec3{1.0f, 0, 0});
-        scale = glm::scale(glm::mat4{1.0f}, glm::vec3{12.0f, 40.0f, 1.0f});
-        model = trans * rot * scale;
-        shader.oldSetMat4("model", model);
+        trans = translate(mat4{1.0f}, vec3{4.5f, 3.5f, -16.0f});
+        rot = rotate(mat4{1.0f}, radians(-90.f), vec3{1.0f, 0, 0});
+        scaleM = scale(mat4{1.0f}, vec3{12.0f, 40.0f, 1.0f});
+        model = trans * rot * scaleM;
+        shader.setMat4("model", model);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         //////////////////////////////////////////////////////////
 
@@ -265,11 +260,11 @@ int main()
         glEnableVertexAttribArray(1);
         glBindTexture(GL_TEXTURE_2D, floorTexture1);
 
-        trans = glm::translate(glm::mat4{1.0f}, glm::vec3{4.5f, -1.0f, -16.0f});
-        rot = glm::rotate(glm::mat4{1.0f}, showcase::radians(-90.0f), glm::vec3{1.0f, 0, 0});
-        scale = glm::scale(glm::mat4{1.0f}, glm::vec3{12.0f, 34.5f, 1.0f});
-        model = trans * rot * scale;
-        shader.oldSetMat4("model", model);
+        trans = translate(mat4{1.0f}, vec3{4.5f, -1.0f, -16.0f});
+        rot = rotate(mat4{1.0f}, radians(-90.0f), vec3{1.0f, 0, 0});
+        scaleM = scale(mat4{1.0f}, vec3{12.0f, 34.5f, 1.0f});
+        model = trans * rot * scaleM;
+        shader.setMat4("model", model);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         /////////////////////////////////////////////////////////
 
@@ -365,10 +360,10 @@ void mouseCallback(GLFWwindow* window, double xposIn, double yposIn)
     if (pitch < -89.0f)
         pitch = -89.0f;
 
-    showcase::vec3 dir{};
-    dir.x = cos(showcase::radians(yaw)) * cos(showcase::radians(pitch));
-    dir.y = sin(showcase::radians(pitch));
-    dir.z = sin(showcase::radians(yaw)) * cos(showcase::radians(pitch));
+    vec3 dir{};
+    dir.x = cos(radians(yaw)) * cos(radians(pitch));
+    dir.y = sin(radians(pitch));
+    dir.z = sin(radians(yaw)) * cos(radians(pitch));
     cameraFront = dir.normalize();
 }
 
