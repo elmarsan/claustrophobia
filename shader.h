@@ -8,8 +8,6 @@
 #include <iostream>
 #include "math.h"
 
-using namespace claustrophobia;
-
 class Shader
 {
 public:

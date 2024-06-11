@@ -1,98 +1,224 @@
 #pragma once
 
-#include <math.h>
 #include <cmath>
+#include <math.h>
+#include <random>
 
-namespace claustrophobia
+/////////////////////////// Utils ///////////////////////////////
+inline float radians(const float deg) { return deg * M_PI / 180; }
+inline float degress(const float radians) { return radians * 180 / M_PI; }
+
+inline float randomFloat(const float min, const float max)
 {
-inline float radians(const float& deg) { return deg * M_PI / 180; }
-inline float degress(const float& radians) { return radians * 180 / M_PI; }
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<> dis(min, max);
+    return dis(gen);
+}
+////////////////////////////////////////////////////////////////
+
+struct vec2
+{
+    union
+    {
+        float x, r, u;
+    };
+
+    union
+    {
+        float y, g, v;
+    };
+
+    vec2();
+    vec2(const float x, const float y);
+};
 
 struct vec3
 {
-    vec3() : x(0), y(0), z(0) {}
-    vec3(const float x, const float y, const float z) : x(x), y(y), z(z) {}
-
-    vec3 cross(const vec3& r) const
+    union
     {
-        return vec3{
-            (y * r.z) - (z * r.y),
-            (z * r.x) - (x * r.z),
-            (x * r.y) - (y * r.x),
-        };
-    }
+        float x, r;
+    };
 
-    float dot(const vec3& r) const { return x * r.x + y * r.y + z * r.z; }
-
-    vec3 normalize() const { return *this / magnitude(); }
-
-    float magnitude() const { return sqrt(pow(x, 2) + pow(y, 2) + pow(z, 2)); }
-
-    vec3 operator*(const float& s) const { return vec3{x * s, y * s, z * s}; }
-
-    void operator*=(const float& s)
+    union
     {
-        x *= s;
-        y *= s;
-        z *= s;
-    }
+        float y, g;
+    };
 
-    vec3 operator*(const vec3& r) const { return vec3{x * r.x, y * r.y, z * r.z}; }
-
-    void operator*=(const vec3& r)
+    union
     {
-        x *= r.x;
-        y *= r.y;
-        z *= r.z;
-    }
+        float z, b;
+    };
 
-    vec3 operator-(const vec3& r) const { return vec3{x - r.x, y - r.y, z - r.z}; }
-    void operator-=(const vec3& r)
-    {
-        x -= r.x;
-        y -= r.y;
-        z -= r.z;
-    }
+    vec3();
+    vec3(const float x, const float y, const float z);
+    vec3(const float val);
 
-    vec3 operator+(const vec3& r) const { return vec3{x + r.x, y + r.y, z + r.z}; }
-    void operator+=(const vec3& r)
-    {
-        x += r.x;
-        y += r.y;
-        z += r.z;
-    }
+    vec3 cross(const vec3 &rhs) const;
+    float dot(const vec3 &r) const;
+    vec3 normalize() const;
+    float magnitude() const;
 
-    vec3 operator/(const float& r) const { return vec3{x / r, y / r, z / r}; }
+    // Operators
+    vec3 operator*(const float &rhs) const;
+    vec3 operator*(const vec3 &rhs) const;
+    void operator*=(const float &rhs);
+    void operator*=(const vec3 &rhs);
 
-    float& operator[](const int i) { return (&x)[i]; }
-    const float& operator[](const int i) const { return (&x)[i]; }
+    vec3 operator-(const vec3 &rhs) const;
+    void operator-=(const vec3 &rhs);
+    vec3 operator+(const vec3 &rhs) const;
+    void operator+=(const vec3 &rhs);
 
-    float angle(const vec3& r) const { return pow(cos(dot(r)) / magnitude() * r.magnitude(), -1); }
+    vec3 operator/(const float &rhs) const;
 
-    friend vec3 operator*(const float& l, const vec3& r) { return vec3{r.x * l, r.y * l, r.z * l}; }
+    float &operator[](const int i);
+    const float &operator[](const int i) const;
 
-    float x;
-    float y;
-    float z;
+    // Friend operators
+    friend vec3 operator*(const float &lhs, const vec3 &rhs) { return vec3{rhs.x * lhs, rhs.y * lhs, rhs.z * lhs}; }
 };
 
 struct vec4
 {
-    vec4() = default;
-    vec4(const float x, const float y, const float z, const float w) : x(x), y(y), z(z), w(w) {}
+    union
+    {
+        float x, r;
+    };
 
-    float& operator[](const int i) { return (&x)[i]; }
-    const float& operator[](const int i) const { return (&x)[i]; }
+    union
+    {
+        float y, g;
+    };
 
-    vec4 operator*(const vec4& r) const { return vec4{x * r.x, y * r.y, z * r.z, w * r.w}; }
+    union
+    {
+        float z, b;
+    };
 
-    float dot(const vec4& r) const { return x * r.x + y * r.y + z * r.z + w * r.w; }
+    union
+    {
+        float w, a;
+    };
 
-    float x;
-    float y;
-    float z;
-    float w;
+    vec4();
+    vec4(const float x, const float y, const float z, const float w);
+
+    float dot(const vec4 &rhs) const;
+
+    // Operators
+    vec4 operator*(const vec4 &rhs) const;
+
+    vec4 operator+(const vec4 &rhs) const;
+    
+    bool operator==(const vec4 &rhs) const;
+
+    float &operator[](const int i);
+    const float &operator[](const int i) const;
+
+    // Friend operators
+    friend vec4 operator*(const float lhs, const vec4 &rhs)
+    {
+        return vec4{rhs.x * lhs, rhs.y * lhs, rhs.z * lhs, rhs.w * lhs};
+    }
+
+    friend vec4 operator*(const vec4 &lhs, const float rhs)
+    {
+        return vec4{rhs * lhs.x, rhs * lhs.y, rhs * lhs.z, rhs * lhs.w};
+    }
 };
+
+/////////////////////////// vec2 ////////////////////////////////
+inline vec2::vec2() : x(0), y(0) {}
+
+inline vec2::vec2(const float x, const float y) : x(x), y(y) {}
+/////////////////////////////////////////////////////////////////
+
+/////////////////////////// vec3 ////////////////////////////////
+inline vec3::vec3() : x(0), y(0), z(0) {}
+
+inline vec3::vec3(const float x, const float y, const float z) : x(x), y(y), z(z) {}
+
+inline vec3::vec3(const float val) : x(val), y(val), z(val) {}
+
+inline vec3 vec3::cross(const vec3 &rhs) const
+{
+    return vec3{
+        (y * rhs.z) - (z * rhs.y),
+        (z * rhs.x) - (x * rhs.z),
+        (x * rhs.y) - (y * rhs.x),
+    };
+}
+
+inline float vec3::dot(const vec3 &rhs) const { return x * rhs.x + y * rhs.y + z * rhs.z; }
+
+inline vec3 vec3::normalize() const { return *this / magnitude(); }
+
+inline float vec3::magnitude() const { return sqrt(pow(x, 2) + pow(y, 2) + pow(z, 2)); }
+
+inline vec3 vec3::operator*(const float &rhs) const { return vec3{x * rhs, y * rhs, z * rhs}; }
+
+inline void vec3::operator*=(const float &rhs)
+{
+    x *= rhs;
+    y *= rhs;
+    z *= rhs;
+}
+
+inline vec3 vec3::operator*(const vec3 &rhs) const { return vec3{x * rhs.x, y * rhs.y, z * rhs.z}; }
+
+inline void vec3::operator*=(const vec3 &rhs)
+{
+    x *= rhs.x;
+    y *= rhs.y;
+    z *= rhs.z;
+}
+
+inline vec3 vec3::operator-(const vec3 &rhs) const { return vec3{x - rhs.x, y - rhs.y, z - rhs.z}; }
+
+inline void vec3::operator-=(const vec3 &rhs)
+{
+    x -= rhs.x;
+    y -= rhs.y;
+    z -= rhs.z;
+}
+
+inline vec3 vec3::operator+(const vec3 &rhs) const { return vec3{x + rhs.x, y + rhs.y, z + rhs.z}; }
+
+inline void vec3::operator+=(const vec3 &rhs)
+{
+    x += rhs.x;
+    y += rhs.y;
+    z += rhs.z;
+}
+
+inline vec3 vec3::operator/(const float &rhs) const { return vec3{x / rhs, y / rhs, z / rhs}; }
+
+inline float &vec3::operator[](const int i) { return (&x)[i]; }
+
+inline const float &vec3::operator[](const int i) const { return (&x)[i]; }
+////////////////////////////////////////////////////////////////
+
+/////////////////////////// vec4 ////////////////////////////////
+inline vec4::vec4() : x(0), y(0), z(0), w(0) {}
+
+inline vec4::vec4(const float x, const float y, const float z, const float w) : x(x), y(y), z(z), w(w) {}
+
+inline float &vec4::operator[](const int i) { return (&x)[i]; }
+
+inline const float &vec4::operator[](const int i) const { return (&x)[i]; }
+
+inline vec4 vec4::operator*(const vec4 &rhs) const { return vec4{x * rhs.x, y * rhs.y, z * rhs.z, w * rhs.w}; }
+
+inline vec4 vec4::operator+(const vec4 &rhs) const { return vec4{x + rhs.x, y + rhs.y, z + rhs.z, w + rhs.w}; }
+
+inline bool vec4::operator==(const vec4 &rhs) const 
+{
+    return x == rhs.x && y == rhs.y && z == rhs.z && w == rhs.w;
+}
+
+inline float vec4::dot(const vec4 &rhs) const { return x * rhs.x + y * rhs.y + z * rhs.z + w * rhs.w; }
+////////////////////////////////////////////////////////////////
 
 struct mat4
 {
@@ -104,12 +230,20 @@ struct mat4
           col3{0.0f, 0.0f, 0.0f, diagonal}
     {
     }
-    mat4(const mat4& r) : col0(r.col0), col1(r.col1), col2(r.col2), col3(r.col3) {}
+    mat4(const mat4 &r) : col0(r.col0), col1(r.col1), col2(r.col2), col3(r.col3) {}
+    mat4(const float v00, const float v01);
 
-    vec4& operator[](const int i) { return (&col0)[i]; }
-    const vec4& operator[](const int i) const { return (&col0)[i]; }
+    mat4(const float m00, const float m01, const float m02, const float m03, const float m10, const float m11,
+         const float m12, const float m13, const float m20, const float m21, const float m22, const float m23,
+         const float m30, const float m31, const float m32, const float m33)
+        : col0(m00, m01, m02, m03), col1(m10, m11, m12, m13), col2(m20, m21, m22, m23), col3(m30, m31, m32, m33)
+    {
+    }
 
-    mat4 operator*(const mat4& r)
+    vec4 &operator[](const int i) { return (&col0)[i]; }
+    const vec4 &operator[](const int i) const { return (&col0)[i]; }
+
+    mat4 operator*(const mat4 &r)
     {
         mat4 m{};
 
@@ -147,7 +281,7 @@ struct mat4
     vec4 col3;
 };
 
-inline mat4 translate(const mat4& m, const vec3& v)
+inline mat4 translate(const mat4 &m, const vec3 &v)
 {
     mat4 t{m};
     t[3][0] = v.x;
@@ -156,7 +290,7 @@ inline mat4 translate(const mat4& m, const vec3& v)
     return t;
 }
 
-inline mat4 rotate(const mat4& m, const float& a, const vec3& v)
+inline mat4 rotate(const mat4 &m, const float &a, const vec3 &v)
 {
     const auto c = cos(a);
     const auto s = sin(a);
@@ -166,42 +300,30 @@ inline mat4 rotate(const mat4& m, const float& a, const vec3& v)
     const auto y = r.y;
     const auto z = r.z;
 
-    mat4 mr{m};
+    mat4 rot;
 
-    mr[0][0] = (1 - c) * pow(x, 2) + c;
-    mr[0][1] = (1 - c) * x * y + s * z;
-    mr[0][2] = (1 - c) * x * z - s * y;
+    rot[0][0] = (1 - c) * pow(x, 2) + c;
+    rot[0][1] = (1 - c) * x * y + s * z;
+    rot[0][2] = (1 - c) * x * z - s * y;
 
-    mr[1][0] = (1 - c) * x * y - s * z;
-    mr[1][1] = (1 - c) * pow(y, 2) + c;
-    mr[1][2] = (1 - c) * y * z + s * x;
+    rot[1][0] = (1 - c) * x * y - s * z;
+    rot[1][1] = (1 - c) * pow(y, 2) + c;
+    rot[1][2] = (1 - c) * y * z + s * x;
 
-    mr[2][0] = (1 - c) * x * z + s * y;
-    mr[2][1] = (1 - c) * y * z - s * x;
-    mr[2][2] = (1 - c) * pow(z, 2) + c;
+    rot[2][0] = (1 - c) * x * z + s * y;
+    rot[2][1] = (1 - c) * y * z - s * x;
+    rot[2][2] = (1 - c) * pow(z, 2) + c;
 
-    return mr;
+    mat4 res;
+    res[0] = rot[0][0] * m[0] + rot[0][1] * m[1] + rot[0][2] * m[2];
+    res[1] = rot[1][0] * m[0] + rot[1][1] * m[1] + rot[1][2] * m[2];
+    res[2] = rot[2][0] * m[0] + rot[2][1] * m[1] + rot[2][2] * m[2];
+    res[3] = m[3];
+
+    return res;
 }
 
-/* inline mat4 xFrustum(float fov, float aspectRatio, float zNear, float zFar) */
-/* { */
-/*     const float tanHalfFov = tan(fov / 2); */
-/*     const float right = zNear * tanHalfFov; */
-/*     const float top = right / aspectRatio; */
-
-/*     mat4 f{1.0f}; */
-
-/*     f[0][0] = zNear / right; */
-/*     f[1][1] = zNear / top; */
-/*     f[2][2] = -(zFar + zNear) / (zFar + zNear); */
-/*     f[2][3] = -1; */
-/*     f[3][2] = -(2 * zFar * zNear) / (zFar - zNear); */
-/*     f[3][3] = 0; */
-
-/*     return f; */
-/* } */
-
-inline mat4 perspective(const float& fov, const float& aspectRatio, const float& zNear, const float& zFar)
+inline mat4 perspective(const float &fov, const float &aspectRatio, const float &zNear, const float &zFar)
 {
     mat4 p{0};
 
@@ -216,7 +338,7 @@ inline mat4 perspective(const float& fov, const float& aspectRatio, const float&
     return p;
 }
 
-inline mat4 lookAt(const vec3& eye, const vec3& target, const vec3& worldUp)
+inline mat4 lookAt(const vec3 &eye, const vec3 &target, const vec3 &worldUp)
 {
     const auto forward = (eye - target).normalize();
     const auto left = worldUp.cross(forward).normalize();
@@ -243,12 +365,12 @@ inline mat4 lookAt(const vec3& eye, const vec3& target, const vec3& worldUp)
     return lookAtm;
 }
 
-inline mat4 scale(const mat4& m, const vec3& v)
+inline mat4 scale(const mat4 &m, const vec3 &v)
 {
-    mat4 s{m};
-    s[0][0] = v.x;
-    s[1][1] = v.y;
-    s[2][2] = v.z;
+    mat4 s{};
+    s[0] = v.x * m[0];
+    s[1] = v.y * m[1];
+    s[2] = v.z * m[2];
+    s[3] = m[3];
     return s;
 }
-}  // namespace claustrophobia

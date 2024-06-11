@@ -7,8 +7,6 @@
 #include <GLFW/glfw3.h>
 #include <stb_image.h>
 
-using namespace claustrophobia;
-
 void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
 void mouseCallback(GLFWwindow* window, double xpos, double ypos);
@@ -201,14 +199,11 @@ int main()
         auto view = lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
         shader.setMat4("view", view);
 
-        auto proj = perspective(radians(fov), float(screenWidth) / float(screenHeight),
-                                          perspectiveNear, perspectiveFar);
+        auto proj =
+            perspective(radians(fov), float(screenWidth) / float(screenHeight), perspectiveNear, perspectiveFar);
         shader.setMat4("proj", proj);
 
-        mat4 trans;
-        mat4 scaleM;
-        mat4 rot;
-        mat4 model;
+        mat4 model{1.0f};
 
         /////////////////////////  WALLS /////////////////////////
         glBindTexture(GL_TEXTURE_2D, wallTexture1);
@@ -216,31 +211,30 @@ int main()
         for (int i = 0; i < 7; i++)
         {
             // Left wall
-            trans = translate(mat4{1.0f}, vec3{-0.3f, 0.8f, i * -5.0f});
-            rot = rotate(mat4{1.0f}, radians(90.0f), vec3{0, 1.0f, 0});
-            scaleM = scale(mat4{1.0f}, vec3{5.0f, 5.5f, 0});
-            model = trans * rot * scaleM;
+            model = mat4{1.0f};
+            model = translate(model, vec3{-0.3f, 0.8f, i * -5.0f});
+            model = rotate(model, radians(90.0f), vec3{0, 1.0f, 0});
+            model = scale(model, vec3{5.0f, 5.5f, 0});
 
             shader.setMat4("model", model);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
             // Right wall
-            trans = translate(trans, vec3{10.0f, 0.8f, i * -5.0f});
-            model = trans * rot * scaleM;
+            model = translate(model, vec3{10.0f, 0.8f, i * -5.0f});
             shader.setMat4("model", model);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         }
         // Far wall
-        trans = translate(mat4{1.0f}, vec3{4.5f, 0.8f, -32.0f});
-        scaleM = scale(mat4{1.0f}, vec3{12.0f, 5.5f, 1.0f});
-        model = trans * scaleM;
+        model = mat4{1.0f};
+        model = translate(model, vec3{4.5f, 0.8f, -32.0f});
+        model = scale(model, vec3{12.0f, 5.5f, 1.0f});
         shader.setMat4("model", model);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         // Near wall
-        trans = translate(mat4{1.0f}, vec3{4.5f, 0.8f, 1.0f});
-        scaleM = scale(mat4{1.0f}, vec3{12.0f, 5.5f, 1.0f});
-        model = trans * scaleM;
+        model = mat4{1.0f};
+        model = translate(model, vec3{4.5f, 0.8f, 1.0f});
+        model = scale(model, vec3{12.0f, 5.5f, 1.0f});
         shader.setMat4("model", model);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
@@ -248,10 +242,10 @@ int main()
 
         /////////////////////////  CEILING ///////////////////////
         glBindTexture(GL_TEXTURE_2D, floorTexture1);
-        trans = translate(mat4{1.0f}, vec3{4.5f, 3.5f, -16.0f});
-        rot = rotate(mat4{1.0f}, radians(-90.f), vec3{1.0f, 0, 0});
-        scaleM = scale(mat4{1.0f}, vec3{12.0f, 40.0f, 1.0f});
-        model = trans * rot * scaleM;
+        model = mat4{1.0f};
+        model = translate(model, vec3{4.5f, 3.5f, -16.0f});
+        model = rotate(model, radians(-90.f), vec3{1.0f, 0, 0});
+        model = scale(model, vec3{12.0f, 40.0f, 1.0f});
         shader.setMat4("model", model);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         //////////////////////////////////////////////////////////
@@ -259,11 +253,10 @@ int main()
         /////////////////////////  FLOOR /////////////////////////
         glEnableVertexAttribArray(1);
         glBindTexture(GL_TEXTURE_2D, floorTexture1);
-
-        trans = translate(mat4{1.0f}, vec3{4.5f, -1.0f, -16.0f});
-        rot = rotate(mat4{1.0f}, radians(-90.0f), vec3{1.0f, 0, 0});
-        scaleM = scale(mat4{1.0f}, vec3{12.0f, 34.5f, 1.0f});
-        model = trans * rot * scaleM;
+        model = mat4{1.0f};
+        model = translate(model, vec3{4.5f, -1.0f, -16.0f});
+        model = rotate(model, radians(-90.0f), vec3{1.0f, 0, 0});
+        model = scale(model, vec3{12.0f, 34.5f, 1.0f});
         shader.setMat4("model", model);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         /////////////////////////////////////////////////////////
